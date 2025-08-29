@@ -112,13 +112,11 @@
 </head>
 <body>
 
-<!-- This canvas provides the animated starry background for the ENTIRE site -->
 <canvas id="background-canvas"></canvas>
 
-<!-- Other elements -->
-<audio id="bgMusic" src="Au-clair-de-mon-âme.m4a" preload="auto" loop></audio>
-<audio id="bdayMusic" src="HAPPY-BIRTHDAY-INSTRUMENTAL.m4a" preload="auto" loop></audio>
-<audio id="airSound" src="Mouth-Blow-Whoosh-Sound-Effect.m4a" preload="auto"></audio>
+<audio id="bgMusic" src="https://github.com/Jo8hnn/ZBD/blob/main/Au-clair-de-mon-âme.m4a" preload="auto" loop></audio>
+<audio id="bdayMusic" src="https://github.com/Jo8hnn/ZBD/blob/main/HAPPY-BIRTHDAY-INSTRUMENTAL.m4a" preload="auto" loop></audio>
+<audio id="airSound" src="https://github.com/Jo8hnn/ZBD/blob/main/Mouth-Blow-Whoosh-Sound-Effect.m4a" preload="auto"></audio>
 <canvas id="confetti-canvas"></canvas>
 
 <!-- Scene 1: Greeting -->
@@ -208,7 +206,7 @@
             stars.push({
                 x: Math.random() * backgroundCanvasEl.width,
                 y: Math.random() * backgroundCanvasEl.height,
-                r: Math.random() * 1.5 + 0.5, // Various sizes
+                r: Math.random() * 1.5 + 0.5,
                 opacity: Math.random() * 0.5 + 0.2,
                 twinkleSpeed: Math.random() > 0.98 ? Math.random() * 0.05 + 0.02 : 0
             });
@@ -253,7 +251,7 @@
         initConstellation();
     });
 
-    // --- SCENE 3: ANIMATED CONSTELLATION ---
+    // --- SCENE 3: ANIMATED CONSTELLATION (REWRITTEN AND FIXED) ---
     const next3 = document.getElementById('next3');
     let constellationAnimationId;
     function initConstellation() {
@@ -274,41 +272,55 @@
             'Z': { points: [{x:0,y:0},{x:1,y:0},{x:0,y:1},{x:1,y:1}], lines: [[0,1],[1,2],[2,3]] },
             'A': { points: [{x:0.5,y:0},{x:0,y:1},{x:1,y:1},{x:0.25,y:0.5},{x:0.75,y:0.5}], lines: [[0,1],[0,2],[3,4]] },
             'H': { points: [{x:0,y:0},{x:0,y:1},{x:1,y:0},{x:1,y:1},{x:0,y:0.5},{x:1,y:0.5}], lines: [[0,1],[2,3],[4,5]] },
-            'R': { points: [{x:0,y:0},{x:0,y:1},{x:1,y:0.2},{x:0.5,y:0.5},{x:1,y:1}], lines: [[0,1],[0,2],[2,3],[3,4]] },
+            'R': { points: [{x:0,y:0},{x:0,y:1},{x:1,y:0.2},{x:0.5,y:0.5},{x:1,y:1}], lines: [[0,1],[0,2],[2,3],[3,4]] }
         };
-        const letterWidth = 35, letterHeight = 60, letterSpacing = 25;
+
+        const letterWidth = 35, letterHeight = 60, letterSpacing = 30;
         const totalWidth = name.length * letterWidth + (name.length - 1) * letterSpacing;
         const startX = (canvas.width - totalWidth) / 2, startY = (canvas.height - letterHeight) / 2;
 
-        let allPoints = [], allLines = [];
+        let allPoints = [];
+        let allLines = [];
+
         for (let i = 0; i < name.length; i++) {
             const char = name[i];
-            const data = letterData[char] || letterData['A']; // Fallback to 'A' if char not found
+            const data = letterData[char];
+            if (!data) continue;
+            
             const currentX = startX + i * (letterWidth + letterSpacing);
-            const transformedPoints = data.points.map(p => ({ x: currentX + p.x * letterWidth, y: startY + p.y * letterHeight }));
-            allPoints.push(...transformedPoints);
-            data.lines.forEach(line => allLines.push({ p1: transformedPoints[line[0]], p2: transformedPoints[line[1]] }));
+            const letterPoints = data.points.map(p => ({ x: currentX + p.x * letterWidth, y: startY + p.y * letterHeight }));
+            const pointIndexOffset = allPoints.length;
+
+            allPoints.push(...letterPoints);
+            
+            data.lines.forEach(line => {
+                const p1 = allPoints[line[0] + pointIndexOffset];
+                const p2 = allPoints[line[1] + pointIndexOffset];
+                allLines.push({ p1, p2 });
+            });
         }
         
-        let currentLine = 0, progress = 0;
+        let currentLineIndex = 0, progress = 0;
         function drawFrame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#fff';
             allPoints.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.fill(); });
             
             ctx.strokeStyle = '#a7c1ff88'; ctx.lineWidth = 1.5;
-            for (let i = 0; i < currentLine; i++) {
+            for (let i = 0; i < currentLineIndex; i++) {
                 const line = allLines[i];
                 ctx.beginPath(); ctx.moveTo(line.p1.x, line.p1.y); ctx.lineTo(line.p2.x, line.p2.y); ctx.stroke();
             }
-            if (currentLine < allLines.length) {
-                const line = allLines[currentLine];
+
+            if (currentLineIndex < allLines.length) {
+                const line = allLines[currentLineIndex];
                 const dx = line.p2.x - line.p1.x, dy = line.p2.y - line.p1.y;
                 ctx.beginPath(); ctx.moveTo(line.p1.x, line.p1.y); ctx.lineTo(line.p1.x + dx * progress, line.p1.y + dy * progress); ctx.stroke();
-                progress += 0.05;
-                if (progress >= 1) { progress = 0; currentLine++; }
+                progress += 0.08;
+                if (progress >= 1) { progress = 0; currentLineIndex++; }
             }
-            if (currentLine < allLines.length) { constellationAnimationId = requestAnimationFrame(drawFrame); }
+
+            if (currentLineIndex < allLines.length) { constellationAnimationId = requestAnimationFrame(drawFrame); }
             else { next3.disabled = false; }
         }
         drawFrame();
