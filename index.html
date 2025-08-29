@@ -1,0 +1,240 @@
+<script>
+    // --- GENERAL SETUP ---
+    const scenes = document.querySelectorAll('.scene');
+    let currentScene = 0;
+    let userName = 'Zahraa'; // Default name
+    function showScene(n) { scenes.forEach((s, i) => s.classList.toggle('active', i === n)); }
+
+    // --- AUDIO MANAGEMENT ---
+    const bgMusic = document.getElementById('bgMusic'), bdayMusic = document.getElementById('bdayMusic'), airSound = document.getElementById('airSound');
+    function safePlay(audio, vol = 1) {
+        audio.volume = vol;
+        audio.currentTime = 0;
+        // .play() returns a promise, which we should handle to avoid uncaught errors
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.error("Audio playback failed:", error);
+            });
+        }
+    }
+
+    // --- SPARKLING BACKGROUND STARFIELD ---
+    const backgroundCanvasEl = document.getElementById('background-canvas');
+    const bgCtx = backgroundCanvasEl.getContext('2d');
+    let stars = [];
+    function setupStars() {
+        backgroundCanvasEl.width = window.innerWidth;
+        backgroundCanvasEl.height = window.innerHeight;
+        stars = [];
+        for (let i = 0; i < 600; i++) {
+            stars.push({
+                x: Math.random() * backgroundCanvasEl.width,
+                y: Math.random() * backgroundCanvasEl.height,
+                r: Math.random() * 1.5 + 0.5,
+                opacity: Math.random() * 0.5 + 0.2,
+                twinkleSpeed: Math.random() > 0.98 ? Math.random() * 0.05 + 0.02 : 0
+            });
+        }
+    }
+    function drawStars() {
+        bgCtx.clearRect(0, 0, backgroundCanvasEl.width, backgroundCanvasEl.height);
+        stars.forEach(star => {
+            let opacity = star.opacity;
+            if (star.twinkleSpeed > 0) { opacity = Math.abs(Math.sin(Date.now() * 0.0001 / star.twinkleSpeed)) * 0.7 + 0.3; }
+            bgCtx.globalAlpha = opacity;
+            bgCtx.fillStyle = '#fff';
+            bgCtx.beginPath();
+            bgCtx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+            bgCtx.fill();
+        });
+        bgCtx.globalAlpha = 1;
+        requestAnimationFrame(drawStars);
+    }
+    window.addEventListener('resize', setupStars);
+    setupStars();
+    drawStars();
+
+    // --- SCENE 1: GREETING ---
+    const nameInput = document.getElementById('nameInput');
+    document.getElementById('continue1').addEventListener('click', () => {
+        
+        // --- THIS IS THE FIX FOR THE BACKGROUND MUSIC ---
+        // We attempt to play the music directly in response to this first click.
+        // This is the most reliable way to satisfy browser autoplay policies.
+        const playPromise = bgMusic.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                // Playback started successfully! Now we can set the volume.
+                bgMusic.volume = 0.4;
+            }).catch(error => {
+                // Playback was prevented by the browser.
+                console.error("Background music failed to start:", error);
+            });
+        }
+        // --- END OF FIX ---
+
+        userName = nameInput.value.trim() || 'Zahraa';
+        document.getElementById('rarityText').innerHTML = `Did you know the chance of you being born is <strong>1 in 400 trillion</strong>? Considering that everything had to align perfectly… that makes you truly special, <strong>${userName}</strong>.`;
+        document.getElementById('final-title').textContent = `Happy Birthday ${userName}`;
+        backgroundCanvasEl.style.transition = 'transform 15s ease-out';
+        backgroundCanvasEl.style.transform = 'scale(2.5)';
+        
+        // We no longer call safePlay for the first music track here.
+        currentScene++;
+        showScene(currentScene);
+    });
+    nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('continue1').click(); });
+
+    // --- SCENE 2: COSMIC ZOOM ---
+    document.getElementById('next2').addEventListener('click', () => {
+        currentScene++;
+        showScene(currentScene);
+        initConstellation();
+    });
+
+    // --- SCENE 3: ANIMATED CONSTELLATION ---
+    const next3 = document.getElementById('next3');
+    let constellationAnimationId;
+    function initConstellation() {
+        cancelAnimationFrame(constellationAnimationId);
+        next3.disabled = true;
+        animateConstellation(userName.toUpperCase());
+    }
+    next3.addEventListener('click', () => {
+        cancelAnimationFrame(constellationAnimationId);
+        currentScene++;
+        showScene(currentScene);
+        initCake();
+    });
+    function animateConstellation(name) {
+        const canvas = document.getElementById('constellation-canvas');
+        const ctx = canvas.getContext('2d');
+        const letterData = {
+            'Z': { points: [{x:0,y:0},{x:1,y:0},{x:0,y:1},{x:1,y:1}], lines: [[0,1],[1,2],[2,3]] },
+            'A': { points: [{x:0.5,y:0},{x:0,y:1},{x:1,y:1},{x:0.25,y:0.5},{x:0.75,y:0.5}], lines: [[0,1],[0,2],[3,4]] },
+            'H': { points: [{x:0,y:0},{x:0,y:1},{x:1,y:0},{x:1,y:1},{x:0,y:0.5},{x:1,y:0.5}], lines: [[0,1],[2,3],[4,5]] },
+            'R': { points: [{x:0,y:0},{x:0,y:1},{x:1,y:0.2},{x:0.5,y:0.5},{x:1,y:1}], lines: [[0,1],[0,2],[2,3],[3,4]] }
+        };
+
+        const letterWidth = 35, letterHeight = 60, letterSpacing = 30;
+        const totalWidth = name.length * letterWidth + (name.length - 1) * letterSpacing;
+        const startX = (canvas.width - totalWidth) / 2, startY = (canvas.height - letterHeight) / 2;
+
+        let allPoints = [];
+        let allLines = [];
+        let pointIndexOffset = 0;
+
+        for (let i = 0; i < name.length; i++) {
+            const char = name[i];
+            const data = letterData[char];
+            if (!data) continue;
+            
+            const currentX = startX + i * (letterWidth + letterSpacing);
+            const letterPoints = data.points.map(p => ({ x: currentX + p.x * letterWidth, y: startY + p.y * letterHeight }));
+            allPoints.push(...letterPoints);
+            
+            data.lines.forEach(line => {
+                const p1 = allPoints[line[0] + pointIndexOffset];
+                const p2 = allPoints[line[1] + pointIndexOffset];
+                allLines.push({ p1, p2 });
+            });
+            pointIndexOffset += data.points.length;
+        }
+        
+        let currentLineIndex = 0, progress = 0;
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            allPoints.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.fill(); });
+            
+            ctx.strokeStyle = '#a7c1ff88'; ctx.lineWidth = 1.5;
+            for (let i = 0; i < currentLineIndex; i++) {
+                const line = allLines[i];
+                if(line && line.p1 && line.p2) {
+                    ctx.beginPath(); ctx.moveTo(line.p1.x, line.p1.y); ctx.lineTo(line.p2.x, line.p2.y); ctx.stroke();
+                }
+            }
+
+            if (currentLineIndex < allLines.length) {
+                const line = allLines[currentLineIndex];
+                 if(line && line.p1 && line.p2) {
+                    const dx = line.p2.x - line.p1.x, dy = line.p2.y - line.p1.y;
+                    ctx.beginPath(); ctx.moveTo(line.p1.x, line.p1.y); ctx.lineTo(line.p1.x + dx * progress, line.p1.y + dy * progress); ctx.stroke();
+                }
+                progress += 0.08;
+                if (progress >= 1) { progress = 0; currentLineIndex++; }
+            }
+
+            if (currentLineIndex < allLines.length) { constellationAnimationId = requestAnimationFrame(drawFrame); }
+            else { next3.disabled = false; }
+        }
+        drawFrame();
+    }
+
+    // --- SCENE 4: CAKE ---
+    const cakeContainer = document.getElementById('cake-container');
+    const candlesLeftSpan = document.getElementById('candles-left');
+    let candlesLeft = 19;
+    function initCake() {
+        candlesLeft = 19;
+        let cakeHTML = `<div style="color: #ffb6c1;">*****************<br>*******************</div><div style="color: #c8a2c8;">|||||||||||||||||||</div>`;
+        let candlesHTML = '';
+        for (let i = 0; i < 19; i++) { candlesHTML += `<span class="candle"><span class="flame">i</span><br>|</span>`; }
+        cakeContainer.innerHTML = candlesHTML + '<br>' + cakeHTML;
+        candlesLeftSpan.textContent = candlesLeft;
+    }
+    document.getElementById('blowCandles').addEventListener('click', () => {
+        if (candlesLeft > 0) {
+            safePlay(airSound, 0.8);
+            const flames = cakeContainer.querySelectorAll('.flame:not(.out)');
+            if (flames.length > 0) {
+                flames[flames.length-1].classList.add('out');
+                candlesLeft--;
+                candlesLeftSpan.textContent = candlesLeft;
+            }
+        }
+        if (candlesLeft === 0) { setTimeout(() => { currentScene++; showScene(currentScene); initCelebration(); }, 1000); }
+    });
+
+    // --- SCENE 5: CELEBRATION ---
+    const next5 = document.getElementById('next5');
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const confCtx = confettiCanvas.getContext('2d');
+    let confetti = [], confettiAnimation;
+    function initCelebration() {
+        bgMusic.pause();
+        safePlay(bdayMusic, 0.5);
+        startConfetti();
+        setTimeout(() => { next5.style.opacity = 1; next5.style.pointerEvents = 'auto'; }, 2000);
+    }
+    next5.addEventListener('click', () => {
+        stopConfetti();
+        currentScene++;
+        showScene(currentScene);
+        backgroundCanvasEl.style.transform = 'scale(1)';
+    });
+    function startConfetti() {
+        confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight;
+        confetti = [];
+        for (let i = 0; i < 200; i++) {
+            confetti.push({
+                x: Math.random() * confettiCanvas.width, y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                r: Math.random() * 5 + 2, color: `hsl(${Math.random() * 360}, 100%, 70%)`,
+                speed: Math.random() * 3 + 2, tilt: Math.random() * 20 - 10, tiltSpeed: Math.random() * 0.1 + 0.05
+            });
+        }
+        animateConfetti();
+    }
+    function animateConfetti() {
+        confCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+        confetti.forEach((c) => {
+            c.y += c.speed; c.x += Math.sin(c.y / 20) * 2; c.tilt += c.tiltSpeed;
+            confCtx.save(); confCtx.fillStyle = c.color; confCtx.translate(c.x + c.r / 2, c.y + c.r / 2);
+            confCtx.rotate(c.tilt * Math.PI / 180); confCtx.fillRect(-c.r/2, -c.r/2, c.r, c.r); confCtx.restore();
+            if (c.y > confettiCanvas.height) { c.x = Math.random() * confettiCanvas.width; c.y = -20; }
+        });
+        confettiAnimation = requestAnimationFrame(animateConfetti);
+    }
+    function stopConfetti() { setTimeout(() => { cancelAnimationFrame(confettiAnimation); confCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); }, 1500); }
+</script>
