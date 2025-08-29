@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Special Moment in Time</title>
+<style>
+    :root {
+        --bg: #000005;
+        --text: #e0e8ff;
+        --glow: #a7c1ff;
+        --accent: #f0c3ff;
+        --star: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        height: 100%;
+        margin: 0;
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+        overflow: hidden;
+        text-align: center;
+    }
+    /* --- BACKGROUND CANVAS (THE STARRY SKY) --- */
+    #background-canvas {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+    }
+    /* --- SCENE MANAGEMENT --- */
+    .scene {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 1s ease-in-out;
+    }
+    .scene.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .card {
+        background: #101322aa;
+        backdrop-filter: blur(10px);
+        padding: 2.5rem 3rem;
+        border-radius: 24px;
+        width: min(800px, 90vw);
+        box-shadow: 0 0 0 1px var(--glow)22, 0 10px 50px #00000088;
+    }
+    h1 { font-size: clamp(2rem, 5vw, 2.8rem); text-shadow: 0 0 15px var(--glow); margin-bottom: 0.5rem; }
+    h2 { font-size: clamp(1.5rem, 4vw, 2.2rem); margin-bottom: 1rem; }
+    p { font-size: clamp(1rem, 2.5vw, 1.2rem); line-height: 1.6; color: var(--text)c0; margin: 0; }
+    button {
+        cursor: pointer;
+        border: none;
+        background: #6c56d744;
+        color: var(--text);
+        padding: 0.9rem 1.8rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 1rem;
+        box-shadow: 0 0 0 1px var(--glow)44 inset, 0 5px 15px #00000044;
+        transition: transform 0.2s ease, opacity 0.3s;
+    }
+    button:hover:not(:disabled) { transform: scale(1.05); }
+    button:disabled { cursor: not-allowed; opacity: 0.4; }
+    .row { display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center; }
+    input {
+        background: #ffffff10;
+        border: 1px solid var(--glow)33;
+        color: var(--text);
+        padding: 0.9rem 1rem;
+        border-radius: 14px;
+        outline: none;
+        flex-grow: 1;
+        max-width: 300px;
+    }
+    /* --- SCENE-SPECIFIC STYLES --- */
+    #confetti-canvas {
+        position: absolute; inset: 0; z-index: 10; pointer-events: none;
+    }
+    #constellation-canvas {
+        margin-top: 1rem; background: #0003; border-radius: 15px;
+    }
+    .cake-container { font-family: monospace; font-size: 1.2rem; line-height: 1.1; }
+    .candle { display: inline-block; position: relative; margin: 0 -2px; }
+    .flame {
+        color: orange; text-shadow: 0 0 5px yellow;
+        animation: flicker 0.5s infinite alternate; transition: opacity 0.3s;
+    }
+    @keyframes flicker { to { opacity: 0.7; } }
+    .flame.out { opacity: 0; }
+    #scene6 .card {
+        background: transparent; box-shadow: none; backdrop-filter: none;
+    }
+    #final-title {
+        font-size: clamp(3rem, 8vw, 6rem); font-weight: 800;
+        background: linear-gradient(45deg, #ffcba4, var(--accent), var(--glow));
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        animation: glow-text 3s infinite alternate;
+    }
+    #final-signature {
+        font-size: clamp(1.5rem, 4vw, 2.5rem); color: var(--text)a0;
+        animation: fade-in 3s ease-out;
+    }
+    @keyframes glow-text { to { text-shadow: 0 0 30px var(--accent); } }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- This canvas provides the animated starry background for the ENTIRE site -->
+<canvas id="background-canvas"></canvas>
+
+<!-- Other elements -->
+<audio id="bgMusic" src="https://cdn.pixabay.com/audio/2022/11/22/audio_756291a566.mp3" preload="auto" loop></audio>
+<audio id="bdayMusic" src="https://cdn.pixabay.com/audio/2023/10/25/audio_18c5e93a8e.mp3" preload="auto" loop></audio>
+<audio id="airSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_2753a05953.mp3" preload="auto"></audio>
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Scene 1: Greeting -->
+<section class="scene active" id="scene1">
+    <div class="card">
+        <h1>Hi there!</h1>
+        <p>Welcome to this special moment in space and time. What’s your name?</p>
+        <div class="row">
+            <input id="nameInput" type="text" placeholder="e.g., Zahraa" maxlength="32" />
+            <button id="continue1">Continue</button>
+        </div>
+    </div>
+</section>
+
+<!-- Scene 2: Cosmic Zoom-In -->
+<section class="scene" id="scene2">
+    <div class="card">
+        <p id="rarityText"></p>
+        <div class="row">
+            <button id="next2">Next</button>
+        </div>
+    </div>
+</section>
+
+<!-- Scene 3: Constellation -->
+<section class="scene" id="scene3">
+    <div class="card">
+        <h2>The universe even wrote your name in the stars.</h2>
+        <canvas id="constellation-canvas" width="700" height="300"></canvas>
+        <p>Watch as the stars align for you...</p>
+        <div class="row">
+            <button id="next3" disabled>Next</button>
+        </div>
+    </div>
+</section>
+
+<!-- Scene 4: Birthday Cake -->
+<section class="scene" id="scene4">
+    <div class="card">
+        <h2>Make a wish and blow out the candles...</h2>
+        <div id="cake-container" class="cake-container"></div>
+        <p><span id="candles-left">19</span> candles left</p>
+        <div class="row">
+            <button id="blowCandles">Blow!</button>
+        </div>
+    </div>
+</section>
+
+<!-- Scene 5: Celebration -->
+<section class="scene" id="scene5">
+    <div class="card">
+        <h1>I wish you a year full of happiness, adventures and fun mysteries.</h1>
+        <div class="row">
+            <button id="next5" style="opacity: 0; pointer-events: none;">Next</button>
+        </div>
+    </div>
+</section>
+
+<!-- Scene 6: Final Touch -->
+<section class="scene" id="scene6">
+    <div class="card">
+        <h1 id="final-title">Happy Birthday Zahraa</h1>
+        <p id="final-signature">- John</p>
+    </div>
+</section>
+
+<script>
+    // --- GENERAL SETUP ---
+    const scenes = document.querySelectorAll('.scene');
+    let currentScene = 0;
+    let userName = 'Zahraa'; // Default name
+    function showScene(n) { scenes.forEach((s, i) => s.classList.toggle('active', i === n)); }
+
+    // --- AUDIO MANAGEMENT ---
+    const bgMusic = document.getElementById('bgMusic'), bdayMusic = document.getElementById('bdayMusic'), airSound = document.getElementById('airSound');
+    function safePlay(audio, vol = 1) { audio.volume = vol; audio.currentTime = 0; audio.play().catch(() => {}); }
+
+    // --- SPARKLING BACKGROUND STARFIELD ---
+    const backgroundCanvasEl = document.getElementById('background-canvas');
+    const bgCtx = backgroundCanvasEl.getContext('2d');
+    let stars = [];
+    function setupStars() {
+        backgroundCanvasEl.width = window.innerWidth;
+        backgroundCanvasEl.height = window.innerHeight;
+        stars = [];
+        for (let i = 0; i < 600; i++) {
+            stars.push({
+                x: Math.random() * backgroundCanvasEl.width,
+                y: Math.random() * backgroundCanvasEl.height,
+                r: Math.random() * 1.5 + 0.5, // Various sizes
+                opacity: Math.random() * 0.5 + 0.2,
+                twinkleSpeed: Math.random() > 0.98 ? Math.random() * 0.05 + 0.02 : 0
+            });
+        }
+    }
+    function drawStars() {
+        bgCtx.clearRect(0, 0, backgroundCanvasEl.width, backgroundCanvasEl.height);
+        stars.forEach(star => {
+            let opacity = star.opacity;
+            if (star.twinkleSpeed > 0) { opacity = Math.abs(Math.sin(Date.now() * 0.0001 / star.twinkleSpeed)) * 0.7 + 0.3; }
+            bgCtx.globalAlpha = opacity;
+            bgCtx.fillStyle = '#fff';
+            bgCtx.beginPath();
+            bgCtx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+            bgCtx.fill();
+        });
+        bgCtx.globalAlpha = 1;
+        requestAnimationFrame(drawStars);
+    }
+    window.addEventListener('resize', setupStars);
+    setupStars();
+    drawStars();
+
+    // --- SCENE 1: GREETING ---
+    const nameInput = document.getElementById('nameInput');
+    document.getElementById('continue1').addEventListener('click', () => {
+        userName = nameInput.value.trim() || 'Zahraa';
+        document.getElementById('rarityText').innerHTML = `Did you know the chance of you being born is <strong>1 in 400 trillion</strong>? Considering that everything had to align perfectly… that makes you truly special, <strong>${userName}</strong>.`;
+        document.getElementById('final-title').textContent = `Happy Birthday ${userName}`;
+        backgroundCanvasEl.style.transition = 'transform 15s ease-out';
+        backgroundCanvasEl.style.transform = 'scale(2.5)';
+        safePlay(bgMusic, 0.4);
+        currentScene++;
+        showScene(currentScene);
+    });
+    nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('continue1').click(); });
+
+    // --- SCENE 2: COSMIC ZOOM ---
+    document.getElementById('next2').addEventListener('click', () => {
+        currentScene++;
+        showScene(currentScene);
+        initConstellation();
+    });
+
+    // --- SCENE 3: ANIMATED CONSTELLATION ---
+    const next3 = document.getElementById('next3');
+    let constellationAnimationId;
+    function initConstellation() {
+        cancelAnimationFrame(constellationAnimationId);
+        next3.disabled = true;
+        animateConstellation(userName.toUpperCase());
+    }
+    next3.addEventListener('click', () => {
+        cancelAnimationFrame(constellationAnimationId);
+        currentScene++;
+        showScene(currentScene);
+        initCake();
+    });
+    function animateConstellation(name) {
+        const canvas = document.getElementById('constellation-canvas');
+        const ctx = canvas.getContext('2d');
+        const letterData = {
+            'Z': { points: [{x:0,y:0},{x:1,y:0},{x:0,y:1},{x:1,y:1}], lines: [[0,1],[1,2],[2,3]] },
+            'A': { points: [{x:0.5,y:0},{x:0,y:1},{x:1,y:1},{x:0.25,y:0.5},{x:0.75,y:0.5}], lines: [[0,1],[0,2],[3,4]] },
+            'H': { points: [{x:0,y:0},{x:0,y:1},{x:1,y:0},{x:1,y:1},{x:0,y:0.5},{x:1,y:0.5}], lines: [[0,1],[2,3],[4,5]] },
+            'R': { points: [{x:0,y:0},{x:0,y:1},{x:1,y:0.2},{x:0.5,y:0.5},{x:1,y:1}], lines: [[0,1],[0,2],[2,3],[3,4]] },
+        };
+        const letterWidth = 35, letterHeight = 60, letterSpacing = 25;
+        const totalWidth = name.length * letterWidth + (name.length - 1) * letterSpacing;
+        const startX = (canvas.width - totalWidth) / 2, startY = (canvas.height - letterHeight) / 2;
+
+        let allPoints = [], allLines = [];
+        for (let i = 0; i < name.length; i++) {
+            const char = name[i];
+            const data = letterData[char] || letterData['A']; // Fallback to 'A' if char not found
+            const currentX = startX + i * (letterWidth + letterSpacing);
+            const transformedPoints = data.points.map(p => ({ x: currentX + p.x * letterWidth, y: startY + p.y * letterHeight }));
+            allPoints.push(...transformedPoints);
+            data.lines.forEach(line => allLines.push({ p1: transformedPoints[line[0]], p2: transformedPoints[line[1]] }));
+        }
+        
+        let currentLine = 0, progress = 0;
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            allPoints.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.fill(); });
+            
+            ctx.strokeStyle = '#a7c1ff88'; ctx.lineWidth = 1.5;
+            for (let i = 0; i < currentLine; i++) {
+                const line = allLines[i];
+                ctx.beginPath(); ctx.moveTo(line.p1.x, line.p1.y); ctx.lineTo(line.p2.x, line.p2.y); ctx.stroke();
+            }
+            if (currentLine < allLines.length) {
+                const line = allLines[currentLine];
+                const dx = line.p2.x - line.p1.x, dy = line.p2.y - line.p1.y;
+                ctx.beginPath(); ctx.moveTo(line.p1.x, line.p1.y); ctx.lineTo(line.p1.x + dx * progress, line.p1.y + dy * progress); ctx.stroke();
+                progress += 0.05;
+                if (progress >= 1) { progress = 0; currentLine++; }
+            }
+            if (currentLine < allLines.length) { constellationAnimationId = requestAnimationFrame(drawFrame); }
+            else { next3.disabled = false; }
+        }
+        drawFrame();
+    }
+
+    // --- SCENE 4: CAKE ---
+    const cakeContainer = document.getElementById('cake-container');
+    const candlesLeftSpan = document.getElementById('candles-left');
+    let candlesLeft = 19;
+    function initCake() {
+        candlesLeft = 19;
+        let cakeHTML = `<div style="color: #ffb6c1;">*****************<br>*******************</div><div style="color: #c8a2c8;">|||||||||||||||||||</div>`;
+        let candlesHTML = '';
+        for (let i = 0; i < 19; i++) { candlesHTML += `<span class="candle"><span class="flame">i</span><br>|</span>`; }
+        cakeContainer.innerHTML = candlesHTML + '<br>' + cakeHTML;
+        candlesLeftSpan.textContent = candlesLeft;
+    }
+    document.getElementById('blowCandles').addEventListener('click', () => {
+        if (candlesLeft > 0) {
+            safePlay(airSound, 0.8);
+            const flames = cakeContainer.querySelectorAll('.flame:not(.out)');
+            if (flames.length > 0) {
+                flames[flames.length-1].classList.add('out');
+                candlesLeft--;
+                candlesLeftSpan.textContent = candlesLeft;
+            }
+        }
+        if (candlesLeft === 0) { setTimeout(() => { currentScene++; showScene(currentScene); initCelebration(); }, 1000); }
+    });
+
+    // --- SCENE 5: CELEBRATION ---
+    const next5 = document.getElementById('next5');
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const confCtx = confettiCanvas.getContext('2d');
+    let confetti = [], confettiAnimation;
+    function initCelebration() {
+        bgMusic.pause();
+        safePlay(bdayMusic, 0.5);
+        startConfetti();
+        setTimeout(() => { next5.style.opacity = 1; next5.style.pointerEvents = 'auto'; }, 2000);
+    }
+    next5.addEventListener('click', () => {
+        stopConfetti();
+        currentScene++;
+        showScene(currentScene);
+        backgroundCanvasEl.style.transform = 'scale(1)';
+    });
+    function startConfetti() {
+        confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight;
+        confetti = [];
+        for (let i = 0; i < 200; i++) {
+            confetti.push({
+                x: Math.random() * confettiCanvas.width, y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                r: Math.random() * 5 + 2, color: `hsl(${Math.random() * 360}, 100%, 70%)`,
+                speed: Math.random() * 3 + 2, tilt: Math.random() * 20 - 10, tiltSpeed: Math.random() * 0.1 + 0.05
+            });
+        }
+        animateConfetti();
+    }
+    function animateConfetti() {
+        confCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+        confetti.forEach((c) => {
+            c.y += c.speed; c.x += Math.sin(c.y / 20) * 2; c.tilt += c.tiltSpeed;
+            confCtx.save(); confCtx.fillStyle = c.color; confCtx.translate(c.x + c.r / 2, c.y + c.r / 2);
+            confCtx.rotate(c.tilt * Math.PI / 180); confCtx.fillRect(-c.r/2, -c.r/2, c.r, c.r); confCtx.restore();
+            if (c.y > confettiCanvas.height) { c.x = Math.random() * confettiCanvas.width; c.y = -20; }
+        });
+        confettiAnimation = requestAnimationFrame(animateConfetti);
+    }
+    function stopConfetti() { setTimeout(() => { cancelAnimationFrame(confettiAnimation); confCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); }, 1500); }
+</script>
+</body>
+</html>
